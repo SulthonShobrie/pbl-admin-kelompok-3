@@ -88,4 +88,28 @@ class ApiService {
       return [];
     }
   }
+
+  // =====================
+  // KELOMPOK 4 - PRODI
+  // =====================
+  Future<List<Prodi>> getProdi() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$_baseMahasiswa/api/prodi'),
+        headers: _headers,
+      );
+      if (res.statusCode == 200) {
+        final jsonBody = jsonDecode(res.body);
+        // Cek struktur JSON sesuai screenshot (dibungkus dalam 'data')
+        if (jsonBody['status'] == 'success' && jsonBody['data'] != null) {
+          final List dataList = jsonBody['data'];
+          return dataList.map((e) => Prodi.fromJson(e)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error Get Prodi: $e');
+      return [];
+    }
+  }
 }

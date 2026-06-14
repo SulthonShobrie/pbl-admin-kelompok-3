@@ -29,12 +29,12 @@ class Biodata {
   final String emailPribadi;
 
   Biodata.fromJson(Map<String, dynamic> json)
-    : jenisKelamin = json['jenis_kelamin'] ?? '-',
-      tempatLahir = json['tempat_lahir'] ?? '-',
-      tanggalLahir = json['tanggal_lahir'] ?? '-',
-      agama = json['agama'] ?? '-',
-      noHp = json['no_hp'] ?? '-',
-      emailPribadi = json['email_pribadi'] ?? '-';
+    : jenisKelamin = json['jenis_kelamin']?.toString() ?? '-',
+      tempatLahir = json['tempat_lahir']?.toString() ?? '-',
+      tanggalLahir = json['tanggal_lahir']?.toString() ?? '-',
+      agama = json['agama']?.toString() ?? '-',
+      noHp = json['no_hp']?.toString() ?? '-',
+      emailPribadi = json['email_pribadi']?.toString() ?? '-';
 }
 
 // Sub-Model untuk Alamat
@@ -46,11 +46,11 @@ class Alamat {
   final String kodePosDomisili;
 
   Alamat.fromJson(Map<String, dynamic> json)
-    : alamatDomisili = json['alamat_domisili'] ?? '-',
-      rtDomisili = json['rt_domisili'] ?? '-',
-      rwDomisili = json['rw_domisili'] ?? '-',
-      kelurahanDomisili = json['kelurahan_domisili'] ?? '-',
-      kodePosDomisili = json['kode_pos_domisili'] ?? '-';
+    : alamatDomisili = json['alamat_domisili']?.toString() ?? '-',
+      rtDomisili = json['rt_domisili']?.toString() ?? '-',
+      rwDomisili = json['rw_domisili']?.toString() ?? '-',
+      kelurahanDomisili = json['kelurahan_domisili']?.toString() ?? '-',
+      kodePosDomisili = json['kode_pos_domisili']?.toString() ?? '-';
 }
 
 // Sub-Model untuk Orang Tua Wali
@@ -61,18 +61,18 @@ class OrangTuaWali {
   final String noTelepon;
 
   OrangTuaWali.fromJson(Map<String, dynamic> json)
-    : jenisPeran = json['jenis_peran'] ?? '-',
-      namaLengkap = json['nama_lengkap'] ?? '-',
-      pekerjaan = json['pekerjaan'] ?? '-',
-      noTelepon = json['no_telepon'] ?? '-';
+    : jenisPeran = json['jenis_peran']?.toString() ?? '-',
+      namaLengkap = json['nama_lengkap']?.toString() ?? '-',
+      pekerjaan = json['pekerjaan']?.toString() ?? '-',
+      noTelepon = json['no_telepon']?.toString() ?? '-';
 }
 
 class Mahasiswa {
   final String id;
   final String nim;
   final String nama;
-  
-  final String prodi; // Nanti mapping dari prodi_id
+  final String prodiId;
+  final String tahunAkademikId;
   final String status;
 
   // Objek Bersarang (Nested Objects)
@@ -84,12 +84,32 @@ class Mahasiswa {
     required this.id,
     required this.nim,
     required this.nama,
-    required this.prodi,
+    required this.prodiId,
+    required this.tahunAkademikId,
     required this.status,
     this.biodata,
     this.alamat,
     required this.orangTuaWali,
   });
+
+  // HELPER MAPPING ANGKATAN (Jika API tahun akademik mengembalikan ID berupa angka)
+  String get tahunAngkatan {
+    if (tahunAkademikId.length >= 4) return tahunAkademikId;
+    switch (tahunAkademikId) {
+      case '1':
+        return '2020';
+      case '2':
+        return '2021';
+      case '3':
+        return '2022';
+      case '4':
+        return '2023';
+      case '5':
+        return '2024';
+      default:
+        return '-';
+    }
+  }
 
   factory Mahasiswa.fromJson(Map<String, dynamic> json) {
     String rawId =
@@ -105,14 +125,14 @@ class Mahasiswa {
 
     return Mahasiswa(
       id: rawId,
-      nim: json['nim'] ?? '',
-      nama: json['nama_mahasiswa'] ?? json['nama'] ?? 'Tanpa Nama',
-      prodi:
-          json['prodi_id']?.toString() ??
-          'Teknik Informatika', // Default sementara
-      status:
-          json['status'] ??
-          'Aktif', // Karena status tidak ada di schema JSON kamu, kita set default
+      nim: json['nim']?.toString() ?? '',
+      nama:
+          json['nama_mahasiswa']?.toString() ??
+          json['nama']?.toString() ??
+          'Tanpa Nama',
+      prodiId: json['prodi_id']?.toString() ?? '0',
+      tahunAkademikId: json['tahunakademik_id']?.toString() ?? '0',
+      status: json['status']?.toString() ?? 'Aktif',
       biodata: json['biodata'] != null
           ? Biodata.fromJson(json['biodata'])
           : null,
@@ -126,8 +146,24 @@ class Mahasiswa {
       "id_mahasiswa": id,
       "nim": nim,
       "nama_mahasiswa": nama,
-      "prodi_id": prodi,
-      // Field lain bisa disesuaikan untuk post/update
+      "prodi_id": prodiId,
+      "tahunakademik_id": tahunAkademikId,
+      "status": status,
     };
+  }
+}
+
+// Model Baru untuk menampung data dari endpoint /api/prodi Kelompok 4
+class Prodi {
+  final String prodiId;
+  final String namaProdi;
+
+  Prodi({required this.prodiId, required this.namaProdi});
+
+  factory Prodi.fromJson(Map<String, dynamic> json) {
+    return Prodi(
+      prodiId: json['prodi_id']?.toString() ?? '',
+      namaProdi: json['nama_prodi']?.toString() ?? '-',
+    );
   }
 }

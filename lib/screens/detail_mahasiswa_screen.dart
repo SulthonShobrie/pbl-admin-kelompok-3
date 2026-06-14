@@ -1,15 +1,20 @@
 // lib/screens/detail_mahasiswa_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hit_api/models/api_models.dart'; // Pastikan path import ini sesuai
+import 'package:provider/provider.dart';
+import 'package:hit_api/providers/app_provider.dart';
+import 'package:hit_api/models/api_models.dart';
 
 class DetailMahasiswaScreen extends StatelessWidget {
-  // Sekarang kita menerima Object Mahasiswa, bukan Map
   final Mahasiswa mahasiswa;
 
   const DetailMahasiswaScreen({super.key, required this.mahasiswa});
 
   @override
   Widget build(BuildContext context) {
+    // Memanggil provider untuk menerjemahkan ID Prodi menjadi Nama Prodi
+    final prov = context.read<AppProvider>();
+    String namaProdi = prov.getNamaProdi(mahasiswa.prodiId);
+
     bool isAktif = mahasiswa.status.toLowerCase() == "aktif";
 
     // Ambil data Biodata & Alamat (Jika null, beri nilai fallback)
@@ -96,14 +101,23 @@ class DetailMahasiswaScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 5),
                         Text(
-                          mahasiswa.nim.isEmpty ? "-" : mahasiswa.nim,
+                          "NIM: ${mahasiswa.nim.isEmpty ? "-" : mahasiswa.nim}",
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
                           ),
                         ),
+                        const SizedBox(height: 3),
                         Text(
-                          mahasiswa.prodi,
+                          "Prodi: $namaProdi", // Menggunakan nama prodi dinamis
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          "Angkatan: ${mahasiswa.tahunAngkatan}", // Menambahkan angkatan
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -126,7 +140,7 @@ class DetailMahasiswaScreen extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            mahasiswa.status,
+                            mahasiswa.status.toUpperCase(),
                             style: TextStyle(
                               color: isAktif ? Colors.green : Colors.red,
                               fontWeight: FontWeight.bold,

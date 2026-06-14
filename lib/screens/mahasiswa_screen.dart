@@ -16,14 +16,18 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
   String _searchQuery = "";
 
   String? _selectedAngkatan;
-  String? _selectedProdi;
+  String? _selectedProdi; // Sekarang akan menyimpan prodiId
   String? _selectedStatus;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      if (mounted) context.read<AppProvider>().fetchMahasiswa();
+      if (mounted) {
+        // Memanggil data prodi dan mahasiswa secara bersamaan
+        context.read<AppProvider>().fetchProdi();
+        context.read<AppProvider>().fetchMahasiswa();
+      }
     });
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text);
@@ -40,6 +44,9 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
     String? tempAngkatan = _selectedAngkatan;
     String? tempProdi = _selectedProdi;
     String? tempStatus = _selectedStatus;
+
+    // Ambil list prodi dinamis dari provider
+    final prodiList = context.read<AppProvider>().prodiList;
 
     showModalBottomSheet(
       context: context,
@@ -61,58 +68,98 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Filter Mahasiswa",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Filter Mahasiswa",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 10),
 
                   // Filter Angkatan
+                  const Text(
+                    "Tahun Angkatan",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(
-                      labelText: "Angkatan",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     value: tempAngkatan,
-                    items: ['2020', '2021', '2022', '2023'].map((String val) {
+                    hint: const Text("Pilih Tahun Angkatan"),
+                    items: ['2020', '2021', '2022', '2023', '2024'].map((
+                      String val,
+                    ) {
                       return DropdownMenuItem(value: val, child: Text(val));
                     }).toList(),
                     onChanged: (val) => setModalState(() => tempAngkatan = val),
                   ),
                   const SizedBox(height: 15),
 
-                  // Filter Program Studi
+                  // Filter Program Studi (Dinamis dari API Kelompok 4)
+                  const Text(
+                    "Program Studi",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(
-                      labelText: "Program Studi",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     value: tempProdi,
-                    items:
-                        [
-                          'Teknologi Informasi',
-                          'Sistem Informasi',
-                          'Teknik Informatika',
-                        ].map((String val) {
-                          return DropdownMenuItem(value: val, child: Text(val));
-                        }).toList(),
+                    hint: const Text("Pilih Program Studi"),
+                    items: prodiList.map((prodi) {
+                      return DropdownMenuItem(
+                        value: prodi.prodiId, // Simpan ID
+                        child: Text(prodi.namaProdi), // Tampilkan Nama
+                      );
+                    }).toList(),
                     onChanged: (val) => setModalState(() => tempProdi = val),
                   ),
                   const SizedBox(height: 15),
 
                   // Filter Status
+                  const Text(
+                    "Status",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(
-                      labelText: "Status",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     value: tempStatus,
+                    hint: const Text("Pilih Status"),
                     items: ['Aktif', 'Non Aktif'].map((String val) {
                       return DropdownMenuItem(value: val, child: Text(val));
                     }).toList(),
@@ -191,21 +238,20 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
     final rawData = prov.mahasiswaList;
 
     final filteredList = rawData.where((mhs) {
+      // Filter Pencarian
       final matchesSearch =
           mhs.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           mhs.nim.toLowerCase().contains(_searchQuery.toLowerCase());
-      final angkatan = mhs.nim.length >= 2 ? mhs.nim.substring(0, 2) : '';
 
-      // Ambil 2 digit tahun dari filter (misal "2020" jadi "20") untuk dicocokkan dengan awalan NIM
-      final filterAngkatanDigit = _selectedAngkatan != null
-          ? _selectedAngkatan!.substring(2, 4)
-          : null;
+      // Filter Angkatan (Menggunakan getter dari model)
       final matchAngkatan =
-          filterAngkatanDigit == null || angkatan == filterAngkatanDigit;
+          _selectedAngkatan == null || mhs.tahunAngkatan == _selectedAngkatan;
 
+      // Filter Prodi (Mencocokkan ID Prodi)
       final matchProdi =
-          _selectedProdi == null ||
-          mhs.prodi.toLowerCase() == _selectedProdi!.toLowerCase();
+          _selectedProdi == null || mhs.prodiId == _selectedProdi;
+
+      // Filter Status
       final matchStatus =
           _selectedStatus == null ||
           mhs.status.toLowerCase() == _selectedStatus!.toLowerCase();
@@ -218,8 +264,12 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E3A8A),
         title: const Text(
-          "Mahasiswa",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          "Daftar Mahasiswa",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
@@ -284,15 +334,16 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                       final mhs = filteredList[index];
                       bool isAktif = mhs.status.toLowerCase() == 'aktif';
 
+                      // MENGAMBIL NAMA PRODI DARI PROVIDER BERDASARKAN ID
+                      String namaProdi = prov.getNamaProdi(mhs.prodiId);
+
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DetailMahasiswaScreen(
-                                mahasiswa:
-                                    mhs, // <--- Ini perbaikannya (lempar object utuh)
-                              ),
+                              builder: (context) =>
+                                  DetailMahasiswaScreen(mahasiswa: mhs),
                             ),
                           );
                         },
@@ -315,10 +366,12 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                             children: [
                               const CircleAvatar(
                                 radius: 25,
-                                backgroundImage: AssetImage(
-                                  'assets/images/logo.png',
+                                backgroundColor: Color(0xFFE2E8F0),
+                                child: Icon(
+                                  Icons.person,
+                                  color: Color(0xFF1E3A8A),
+                                  size: 30,
                                 ),
-                                backgroundColor: Colors.transparent,
                               ),
                               const SizedBox(width: 15),
                               Expanded(
@@ -334,7 +387,7 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
-                                      mhs.nim.isEmpty ? '-' : mhs.nim,
+                                      "NIM: ${mhs.nim.isEmpty ? '-' : mhs.nim}",
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 13,
@@ -342,7 +395,15 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      mhs.prodi.isEmpty ? '-' : mhs.prodi,
+                                      "Prodi: $namaProdi", // UPDATE DISINI
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "Angkatan: ${mhs.tahunAngkatan}", // UPDATE DISINI
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 13,
@@ -367,11 +428,11 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  mhs.status,
+                                  mhs.status.toUpperCase(),
                                   style: TextStyle(
                                     color: isAktif ? Colors.green : Colors.red,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                    fontSize: 11,
                                   ),
                                 ),
                               ),
@@ -383,17 +444,6 @@ class _MahasiswaScreenState extends State<MahasiswaScreen> {
                   ),
           ),
         ],
-      ),
-      // FAB untuk tambah mahasiswa (Sekalian saya fix agar langsung mengarah ke form tambah)
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF1E3A8A),
-        onPressed: () async {
-          final res = await Navigator.pushNamed(context, '/tambah-user');
-          if (res == true && context.mounted) {
-            context.read<AppProvider>().fetchMahasiswa();
-          }
-        },
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

@@ -10,11 +10,12 @@ class AppProvider with ChangeNotifier {
   String? errorMsg;
 
   List<Mahasiswa> mahasiswaList = [];
+  List<Prodi> prodiList = []; // Tambahan penampung data Prodi
 
   String? loggedInNama;
   bool get isLoggedIn => _api.isLoggedIn;
 
-  // ============ AUTH (LOGIN & LOGOUT) ============\n  Future<bool> login(String email, String password) async {
+  // ============ AUTH (LOGIN & LOGOUT) ============
   Future<bool> login(String email, String password) async {
     isLoading = true;
     errorMsg = null;
@@ -40,10 +41,11 @@ class AppProvider with ChangeNotifier {
     _api.clearToken();
     loggedInNama = null;
     mahasiswaList.clear();
+    prodiList.clear(); // Bersihkan list prodi saat logout
     notifyListeners();
   }
 
-  // ============ MAHASISWA ============\n  Future<void> fetchMahasiswa() async {
+  // ============ MAHASISWA ============
   Future<void> fetchMahasiswa() async {
     isLoading = true;
     notifyListeners();
@@ -55,5 +57,22 @@ class AppProvider with ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  // ============ PRODI ============
+  Future<void> fetchProdi() async {
+    try {
+      prodiList = await _api.getProdi();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Provider Error fetchProdi: $e");
+    }
+  }
+
+  // Helper untuk mendapatkan nama Prodi berdasarkan ID
+  String getNamaProdi(String id) {
+    if (id.isEmpty || id == '0') return '-';
+    final prodi = prodiList.where((p) => p.prodiId == id).firstOrNull;
+    return prodi?.namaProdi ?? '-';
   }
 }
