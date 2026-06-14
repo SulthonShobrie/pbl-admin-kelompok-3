@@ -46,11 +46,12 @@ class ApiService {
   Future<LoginResponse?> loginKarlearn(String email, String password) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseKarlearn/api/login'),
+        Uri.parse('$_baseKarlearn/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
 
+      print("Login response ${res.body}");
       if (res.statusCode == 200) {
         final json = jsonDecode(res.body);
         // Jika response dibungkus data
